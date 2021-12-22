@@ -4,7 +4,7 @@ const userController = require('../controllers/userController')
 const middleware = require('../middlewares/auth')
 
 router.post('/register', userController.userCreation)
-router.post('/login')
+router.post('/login', userController.userLogin)
 router.get('/user/:userId/profile')
 router.put('/user/:userId/profile')
 

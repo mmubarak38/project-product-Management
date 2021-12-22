@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken")
 
 const userAuth = function(req, res, next) {
     try {
-        const token = req.header('x-api-key') //setting token in the request header.
+        const token = req.authorization('Bearer Token') //setting token in the request header.
             // console.log("token", token)
         if (!token) {
             return res.status(403).send({ status: false, message: `Missing authentication token in request` })

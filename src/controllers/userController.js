@@ -1,45 +1,21 @@
 const userModel = require('../models/userModel')
 const validator = require('../utils/validator')
+const config = require('../utils/awsConfig')
+const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
-const salt = 10
-const aws = require("aws-sdk");
+const saltRounds = 10
 
-//!---------------------------------//
-
-const config = aws.config.update({
-    accessKeyId: "AKIAY3L35MCRRMC6253G", // id
-    secretAccessKey: "88NOFLHQrap/1G2LqUy9YkFbFRe/GNERsCyKvTZA", // like your secret password
-    region: "ap-south-1" // Mumbai region
-});
-
-let uploadFile = async(file) => {
-    return new Promise(function(resolve, reject) { // exactly 
-        // Create S3 service object
-        let s3 = new aws.S3({ apiVersion: "2006-03-01" });
-        var uploadParams = {
-            ACL: "public-read", // this file is publically readable
-            Bucket: "classroom-training-bucket",
-            Key: "group3/products_management/" + new Date() + file.originalname,
-            Body: file.buffer,
-        };
-        // Callback - function provided as the second parameter ( most oftenly)
-        s3.upload(uploadParams, function(err, data) {
-            if (err) {
-                return reject({ "error": err });
-            }
-            console.log(data)
-            console.log(`File uploaded successfully. ${data.Location}`);
-            return resolve(data.Location); //HERE 
-        });
-    });
-};
 
 const userCreation = async(req, res) => {
     try {
         let files = req.files;
-        if (files && files.length > 0) {
-            let uploadedFileURL = await uploadFile(files[0]);
-            return res.status(201).send({ status: true, data: uploadedFileURL });
+        if (files) {
+            if (files && files.length > 0) {
+                let uploadedFileURL = await config.uploadFile(files[0]);
+                return res.status(201).send({ status: true, data: uploadedFileURL });
+            } else {
+                return res.status(400).send({ status: true, message: "Nothing to upload." });
+            }
         }
 
         const requestBody = req.body;
@@ -92,39 +68,40 @@ const userCreation = async(req, res) => {
             if (!address.shipping && address.billing) {
                 return res.status(400).send({ status: false, message: "Address must contain both full shipping and billing address." })
             }
-            if (address.shipping) {
-                if (!validator.isValid(address.shipping.street || address.shipping.city || address.shipping.pincode)) {
-                    return res.status(400).send({ status: false, message: "Shipping address must contain Street, City and Pincode." })
-                }
-            }
-            if (address.billing) {
-                if (!validator.isValid(address.billing.street || address.billing.city || address.billing.pincode)) {
-                    return res.status(400).send({ status: false, message: "Billing address must contain Street, City and Pincode." })
-                }
-            }
+            if (!address.shipping.street) return res.status(400).send({ status: false, message: "Shipping address must contain complete street details." })
+
+            if (!address.shipping.city) return res.status(400).send({ status: false, message: "Shipping address must contain city." })
+
+            if (!address.shipping.pincode) return res.status(400).send({ status: false, message: "Shipping address must contain a valid pincode." })
+
+            if (address.billing.street) return res.status(400).send({ status: false, message: "Billing address must contain city." })
+
+            if (address.billing.city) return res.status(400).send({ status: false, message: "Billing address must contain Street, City and Pincode." })
+
+            if (address.billing.pincode) return res.status(400).send({ status: false, message: "Billing address must contain a valid pincode." })
         }
-        const encryptedPassword = await bcrypt.hash(password, salt);
-        const userData = {
+        const encryptedPassword = await bcrypt.hash(password, saltRounds)
+        userData = {
             fname,
             lname,
             email,
             profileImage,
             phone,
-            encryptedPassword,
+            password: encryptedPassword,
             address
         }
-        const createUser = await userModel.create(userData);
+        const saveUserData = await userModel.create(userData);
         return res
             .status(201)
             .send({
                 status: true,
                 message: "user created successfully.",
-                data: createUser
+                data: saveUserData
             });
     } catch (err) {
         return res.status(500).send({
             status: false,
-            message: "Error is : " + err.message
+            message: "Error is : " + err
         })
     }
 }
@@ -165,11 +142,12 @@ const userLogin = async function(req, res) {
             res.status(401).send({ status: false, message: `Invalid login credentials` });
             return
         }
-        const token = await jwt.sign({ userId: user._id }, 'group3', {
-                iat: Date.now(),
-                exp: "24*7h"
-            })
-            //res.header('Bearer Token', token);
+        const token = await jwt.sign({
+            userId: id,
+            iat: Math.floor(Date.now() / 1000), //time of issuing the token.
+            exp: Math.floor(Date.now() / 1000) + 60 * 24 * 7 //setting token expiry time limit.
+        }, 'group3Project5')
+
         res.status(200).send({ status: true, message: `user login successfull`, data: { token } });
     } catch (error) {
         res.status(500).send({ status: false, message: error.message });
