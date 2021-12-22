@@ -1,11 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const {
-    userController,
-    productController,
-    cartController,
-    orderController
-} = require('../controllers');
+const userController = require('../controllers/userController')
 const middleware = require('../middlewares/auth')
 
 router.post('/register', userController.userCreation)
