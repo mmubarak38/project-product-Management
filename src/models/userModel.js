@@ -4,19 +4,19 @@ const userSchema = new mongoose.Schema({
 
     fname: { type: String, required: true },
     lname: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    email: { type: String, unique: true, required: true },
     profileImage: { type: String, required: true }, // s3 link
-    phone: { type: String, required: true, unique: true },
-    password: { type: String, required: true, min: 8, max: 15 }, // encrypted password
+    phone: { type: String, unique: true, required: true },
+    password: { type: String, min: 8, max: 15, required: true }, // encrypted password
     address: {
         shipping: {
-            street: { type: String, required: true, trim: true },
-            city: { type: String, required: true, trim: true },
+            street: { type: String, trim: true, required: true },
+            city: { type: String, trim: true, required: true },
             pincode: { type: Number, required: true }
         },
         billing: {
-            street: { type: String, required: true, trim: true },
-            city: { type: String, required: true, trim: true },
+            street: { type: String, trim: true, required: true },
+            city: { type: String, trim: true, required: true },
             pincode: { type: Number, required: true }
         }
     }

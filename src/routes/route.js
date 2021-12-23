@@ -5,7 +5,7 @@ const middleware = require('../middlewares/auth')
 
 router.post('/register', userController.userCreation)
 router.post('/login', userController.userLogin)
-router.get('/user/:userId/profile')
-router.put('/user/:userId/profile')
+router.get('/user/:userId/profile', middleware.userAuth, userController.getProfile)
+router.put('/user/:userId/profile', userController.updateProfile)
 
 module.exports = router;
